@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Habits | Uni Tracker{% endblock %}
+
+{% block content %}
+<div class="page-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:18px;">
+        <div>
+            <h2>My Habits</h2>
+            <p class="section-subtext">Manage your habits, streaks, and schedule settings.</p>
+        </div>
+        <a href="{% url 'add_habit' %}" class="link-btn">+ Add New Habit</a>
+    </div>
+
+    {% if habits %}
+        <ul class="clean-list">
+            {% for habit in habits %}
+                <li class="item-card">
+                    <div class="item-top">
+                        <div>
+                            <p class="item-title">{{ habit.title }}</p>
+
+                            <div class="item-meta">
+                                <span class="badge">🔁 {{ habit.frequency|title }}</span>
+
+                                {% if habit.preferred_time %}
+                                    <span class="badge">🕒 {{ habit.preferred_time|time:"H:i" }}</span>
+                                {% endif %}
+
+                                {% if habit.frequency == 'weekly' and habit.weekly_days %}
+                                    <span class="badge purple">📅 {{ habit.get_weekly_days_display }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if habit.id in completed_habit_ids %}
+                            <span class="badge success">Done today</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="item-meta" style="margin-top: 4px;">
+                        <span class="badge purple">🔥 Current streak: {{ habit.streak }}</span>
+                        <span class="badge warning">🏆 Best streak: {{ habit.best_streak_value }}</span>
+                    </div>
+
+                    {% if habit.description %}
+                        <p class="small" style="margin-top: 10px;">{{ habit.description }}</p>
+                    {% endif %}
+
+                    <div class="item-actions">
+                        {% if habit.id in completed_habit_ids %}
+                            <span class="done">✅ Completed today</span>
+                        {% else %}
+                            <form method="post" action="{% url 'complete_habit' habit.id %}" class="inline-form">
+                                {% csrf_token %}
+                                <button type="submit">Mark done today</button>
+                            </form>
+                        {% endif %}
+
+                        <a href="{% url 'edit_habit' habit.id %}" class="link-btn">Edit</a>
+                        <a href="{% url 'delete_habit' habit.id %}" class="link-btn">Delete</a>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="empty-box">No habits yet. Add your first habit to get started.</div>
+    {% endif %}
+</div>
+{% endblock %}

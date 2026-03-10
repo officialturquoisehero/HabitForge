@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Habit | Uni Tracker{% endblock %}
+
+{% block content %}
+<div class="page-card" style="max-width: 720px; margin: 0 auto;">
+    <h2>Delete Habit</h2>
+    <p class="section-subtext">This will permanently remove the habit and its log history.</p>
+
+    <div class="item-card" style="margin-bottom: 18px;">
+        <p class="item-title">{{ habit.title }}</p>
+
+        {% if habit.description %}
+            <p class="small" style="margin-top: 8px;">{{ habit.description }}</p>
+        {% endif %}
+
+        <div class="item-meta" style="margin-top: 10px;">
+            <span class="badge">🔁 {{ habit.frequency|title }}</span>
+            {% if habit.preferred_time %}
+                <span class="badge">🕒 {{ habit.preferred_time|time:"H:i" }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <button type="submit">Yes, Delete Habit</button>
+            <a href="{% url 'habit_list' %}" class="link-btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

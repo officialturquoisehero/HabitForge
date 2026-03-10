@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Habit | Uni Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-shell {
+        max-width: 860px;
+        margin: 0 auto;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group.full {
+        grid-column: 1 / -1;
+    }
+
+    .form-note {
+        margin-top: 6px;
+        color: var(--text-soft);
+        font-size: 13px;
+    }
+
+    .checkbox-panel {
+        background: rgba(8, 18, 44, 0.72);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 16px;
+        padding: 16px;
+    }
+
+    .checkbox-panel ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 18px;
+    }
+
+    .checkbox-panel li {
+        margin: 0;
+    }
+
+    .checkbox-panel label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .checkbox-panel input[type="checkbox"] {
+        width: auto;
+        margin: 0;
+        accent-color: #22d3ee;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-top: 16px;
+        flex-wrap: wrap;
+    }
+
+    @media (max-width: 800px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group.full {
+            grid-column: auto;
+        }
+
+        .checkbox-panel ul {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-card form-shell">
+    <h2>Edit Habit</h2>
+    <p class="section-subtext">Update the habit details, timing, and weekly schedule.</p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="field-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-grid">
+            <div class="form-group full">
+                <label for="{{ form.title.id_for_label }}">Habit Title</label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <div class="field-errors">{{ form.title.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group full">
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <div class="field-errors">{{ form.description.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.frequency.id_for_label }}">Frequency</label>
+                {{ form.frequency }}
+                {% if form.frequency.errors %}
+                    <div class="field-errors">{{ form.frequency.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.preferred_time.id_for_label }}">Preferred Time</label>
+                {{ form.preferred_time }}
+                {% if form.preferred_time.errors %}
+                    <div class="field-errors">{{ form.preferred_time.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group full">
+                <label>Weekly Days</label>
+                <div class="checkbox-panel">
+                    {{ form.weekly_days }}
+                </div>
+                {% if form.weekly_days.errors %}
+                    <div class="field-errors">{{ form.weekly_days.errors }}</div>
+                {% endif %}
+                <div class="form-note">Used only when the habit frequency is weekly.</div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">Save Changes</button>
+            <a href="{% url 'habit_list' %}" class="link-btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

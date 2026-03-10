@@ -1,0 +1,405 @@
+{% extends 'base.html' %}
+
+{% block title %}Analysis | Uni Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analysis-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 22px;
+    }
+
+    .overview-card {
+        grid-column: span 12;
+    }
+
+    .weekly-card,
+    .monthly-card,
+    .highlights-card {
+        grid-column: span 4;
+    }
+
+    .donut-card {
+        grid-column: span 5;
+    }
+
+    .habit-chart-card {
+        grid-column: span 7;
+    }
+
+    .heatmap-card,
+    .all-habits-card {
+        grid-column: span 12;
+    }
+
+    .metric-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .metric-row {
+        background: rgba(8, 18, 44, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 14px 16px;
+    }
+
+    .chart-wrapper {
+        width: 100%;
+        margin-top: 14px;
+        position: relative;
+    }
+
+    .donut-wrapper {
+        max-width: 360px;
+        height: 320px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .habit-chart-wrapper {
+        width: 100%;
+        max-width: 900px;
+        margin: 14px auto 0 auto;
+        position: relative;
+    }
+
+    .heatmap-scroll {
+        overflow-x: auto;
+        padding-bottom: 8px;
+    }
+
+    .heatmap-grid {
+        display: grid;
+        grid-template-rows: repeat(7, 20px);
+        grid-auto-flow: column;
+        grid-auto-columns: 20px;
+        gap: 5px;
+    }
+
+    .heatmap-cell {
+        width: 20px;
+        height: 20px;
+        border-radius: 2px;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .heatmap-cell:hover {
+        transform: scale(1.3);
+        border-color: rgba(255,255,255,0.25);
+        z-index: 2;
+    }
+
+    .heatmap-months {
+        position: relative;
+        height: 20px;
+        margin-top: 12px;
+        margin-bottom: 6px;
+    }
+
+    .heatmap-months span {
+        position: absolute;
+        font-size: 11px;
+        color: #9fb0d3;
+        transform: translateX(-50%);
+    }
+
+    .heat-0 { background: rgba(148, 163, 184, 0.10); }
+    .heat-1 { background: rgba(34, 211, 238, 0.20); }
+    .heat-2 { background: rgba(34, 211, 238, 0.38); }
+    .heat-3 { background: rgba(34, 211, 238, 0.60); }
+    .heat-4 { background: rgba(34, 211, 238, 0.90); }
+
+    .mini-legend {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+        align-items: center;
+    }
+
+    .mini-legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #cbd5e1;
+        font-size: 13px;
+    }
+
+    .mini-box {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        display: inline-block;
+    }
+
+    .habit-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+    }
+
+    .habit-stat-item {
+        background: rgba(8, 18, 44, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 16px;
+    }
+
+    @media (max-width: 1200px) {
+        .weekly-card,
+        .monthly-card,
+        .highlights-card,
+        .donut-card,
+        .habit-chart-card {
+            grid-column: span 12;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .habit-stat-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analysis-grid">
+    <div class="card overview-card">
+        <h2>Analysis Overview</h2>
+        <p class="section-subtext">{{ today }}</p>
+        <p style="font-size: 18px; color: #d8c8ff; line-height: 1.6;">{{ overall_feedback }}</p>
+    </div>
+
+    <div class="card weekly-card">
+        <h2>Weekly Performance</h2>
+        <p class="section-subtext">Your last 7 days.</p>
+
+        <div class="metric-stack">
+            <div class="metric-row"><strong>Habit completion:</strong> {{ weekly_habit_percent }}%</div>
+            <div class="metric-row"><strong>Task completion:</strong> {{ weekly_task_percent }}%</div>
+            <div class="metric-row"><strong>Habits completed:</strong> {{ completed_habit_logs_week }}</div>
+            <div class="metric-row"><strong>Tasks completed:</strong> {{ completed_tasks_week }}</div>
+        </div>
+    </div>
+
+    <div class="card monthly-card">
+        <h2>Monthly Performance</h2>
+        <p class="section-subtext">Your last 30 days.</p>
+
+        <div class="metric-stack">
+            <div class="metric-row"><strong>Habit completion:</strong> {{ monthly_habit_percent }}%</div>
+            <div class="metric-row"><strong>Task completion:</strong> {{ monthly_task_percent }}%</div>
+            <div class="metric-row"><strong>Habits completed:</strong> {{ completed_habit_logs_month }}</div>
+            <div class="metric-row"><strong>Tasks completed:</strong> {{ completed_tasks_month }}</div>
+        </div>
+    </div>
+
+    <div class="card highlights-card">
+        <h2>Highlights</h2>
+        <p class="section-subtext">Strongest patterns and streaks.</p>
+
+        <div class="metric-stack">
+            {% if most_consistent_habit %}
+                <div class="metric-row">
+                    <strong>Most consistent:</strong><br>
+                    <span class="small">{{ most_consistent_habit.habit.title }} — {{ most_consistent_habit.weekly_completed }} this week</span>
+                </div>
+            {% endif %}
+
+            {% if most_skipped_habit %}
+                <div class="metric-row">
+                    <strong>Most skipped:</strong><br>
+                    <span class="small">{{ most_skipped_habit.habit.title }} — {{ most_skipped_habit.weekly_completed }} this week</span>
+                </div>
+            {% endif %}
+
+            {% if longest_streak_habit %}
+                <div class="metric-row">
+                    <strong>Longest current streak:</strong><br>
+                    <span class="small">{{ longest_streak_habit.habit.title }} — {{ longest_streak_habit.streak }} days</span>
+                </div>
+            {% endif %}
+
+            {% if best_streak_habit %}
+                <div class="metric-row">
+                    <strong>Best streak ever:</strong><br>
+                    <span class="small">{{ best_streak_habit.habit.title }} — {{ best_streak_habit.best_streak }} days</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card donut-card">
+        <h2>Today's Completion</h2>
+        <p class="section-subtext">Overview of tasks and habits scheduled for today.</p>
+
+        <div class="donut-wrapper">
+            <canvas id="completionDonutChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card habit-chart-card">
+        <h2>Habit Consistency This Week</h2>
+        <p class="section-subtext">Top habits by completions in the last 7 days.</p>
+
+        {% if habit_chart_labels %}
+            <div class="habit-chart-wrapper">
+                <canvas id="habitConsistencyChart"></canvas>
+            </div>
+        {% else %}
+            <div class="empty-box">No habits yet, so there is no chart to show.</div>
+        {% endif %}
+    </div>
+
+    <div class="card heatmap-card">
+        <h2>Activity Heatmap</h2>
+        <p class="section-subtext">Your completed tasks and habits over the last 365 days.</p>
+
+        <div class="heatmap-scroll">
+
+            <div class="heatmap-grid">
+                {% for day in heatmap_days %}
+                    <div
+                        class="heatmap-cell heat-{{ day.level }}"
+                        title="{{ day.date }} — {{ day.count }} completions">
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mini-legend">
+            <span><i class="mini-box heat-0"></i> 0</span>
+            <span><i class="mini-box heat-1"></i> 1–2</span>
+            <span><i class="mini-box heat-2"></i> 3–4</span>
+            <span><i class="mini-box heat-3"></i> 5–6</span>
+            <span><i class="mini-box heat-4"></i> 7+</span>
+        </div>
+    </div>
+
+    <div class="card all-habits-card">
+        <h2>All Habit Stats</h2>
+        <p class="section-subtext">A quick summary of every active habit.</p>
+
+        {% if habit_stats %}
+            <div class="habit-stat-grid">
+                {% for item in habit_stats %}
+                    <div class="habit-stat-item">
+                        <p class="item-title">{{ item.habit.title }}</p>
+                        <div class="item-meta" style="margin-top: 8px;">
+                            <span class="badge">Weekly: {{ item.weekly_completed }}</span>
+                            <span class="badge">Monthly: {{ item.monthly_completed }}</span>
+                            <span class="badge purple">🔥 {{ item.streak }}</span>
+                            <span class="badge warning">🏆 {{ item.best_streak }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-box">No habits yet.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const habitLabels = {{ habit_chart_labels|safe }};
+    const habitValues = {{ habit_chart_values|safe }};
+    const habitChartCanvas = document.getElementById('habitConsistencyChart');
+
+    if (habitChartCanvas) {
+        const rowHeight = 52;
+        const minHeight = 220;
+        const dynamicHeight = Math.max(minHeight, habitLabels.length * rowHeight);
+        habitChartCanvas.style.height = dynamicHeight + "px";
+
+        new Chart(habitChartCanvas, {
+            type: 'bar',
+            data: {
+                labels: habitLabels,
+                datasets: [{
+                    label: 'Weekly Completions',
+                    data: habitValues,
+                    backgroundColor: 'rgba(34, 211, 238, 0.35)',
+                    borderColor: '#22d3ee',
+                    borderWidth: 1.5,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#f8fafc'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#cbd5e1',
+                            stepSize: 1
+                        },
+                        grid: {
+                            color: 'rgba(148,163,184,0.1)'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#cbd5e1'
+                        },
+                        grid: {
+                            color: 'rgba(148,163,184,0.05)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const completionCanvas = document.getElementById('completionDonutChart');
+
+    if (completionCanvas) {
+        new Chart(completionCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: {{ completion_chart_labels|safe }},
+                datasets: [{
+                    data: {{ completion_chart_values|safe }},
+                    backgroundColor: [
+                        '#22c55e',
+                        '#ef4444',
+                        '#06b6d4',
+                        '#f59e0b'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#e2e8f0',
+                            padding: 18
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,822 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | Uni Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1.3fr 0.9fr;
+        gap: 22px;
+    }
+
+    .left-stack,
+    .right-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+    }
+
+    .hero-card {
+        position: relative;
+        overflow: hidden;
+        padding: 26px;
+    }
+
+    .hero-card::before {
+        content: "";
+        position: absolute;
+        inset: auto -80px -80px auto;
+        width: 220px;
+        height: 220px;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgba(34, 211, 238, 0.18), transparent 65%);
+        pointer-events: none;
+    }
+
+    .hero-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 22px;
+        flex-wrap: wrap;
+    }
+
+    .hero-copy h2 {
+        font-size: 30px;
+        margin-bottom: 6px;
+    }
+
+    .hero-copy p {
+        color: var(--text-soft);
+        max-width: 720px;
+    }
+
+    .hero-metrics {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .hero-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.06);
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-main);
+    }
+
+    .hero-bottom {
+        display: grid;
+        grid-template-columns: 1.2fr 320px;
+        gap: 26px;
+        align-items: center;
+        margin-top: 24px;
+    }
+
+    .progress-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .progress-topline {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .progress-topline strong {
+        font-size: 16px;
+    }
+
+    .progress-sub {
+        color: var(--text-soft);
+        font-size: 14px;
+    }
+
+    .progress-shell-lg {
+        width: 100%;
+        height: 18px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 999px;
+        overflow: hidden;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+    }
+
+    .progress-fill-lg {
+        height: 100%;
+        width: {{ progress_percent }}%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #22d3ee 0%, #38bdf8 35%, #8b5cf6 100%);
+        box-shadow: 0 0 26px rgba(34, 211, 238, 0.22);
+    }
+
+    .progress-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .mini-metric {
+        background: rgba(8, 18, 44, 0.72);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 18px;
+        padding: 14px;
+    }
+
+    .mini-metric-value {
+        font-size: 22px;
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+
+    .mini-metric-label {
+        font-size: 13px;
+        color: var(--text-soft);
+    }
+
+    .progress-ring-wrap {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .progress-ring {
+        --size: 220px;
+        --thickness: 18px;
+        --value: {{ progress_percent }};
+        width: var(--size);
+        height: var(--size);
+        border-radius: 50%;
+        background:
+            radial-gradient(
+                closest-side,
+                rgba(7, 16, 41, 1) calc(100% - var(--thickness)),
+                transparent calc(100% - var(--thickness) + 1px)
+            ),
+            conic-gradient(
+                #22d3ee 0 calc(var(--value) * 1%),
+                rgba(255,255,255,0.06) calc(var(--value) * 1%) 100%
+            );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow:
+            inset 0 0 0 1px rgba(255,255,255,0.04),
+            0 18px 38px rgba(0,0,0,0.25);
+    }
+
+    .progress-ring-inner {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .progress-ring-value {
+        font-size: 44px;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .progress-ring-label {
+        font-size: 13px;
+        color: var(--text-soft);
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+
+    .section-card h2 {
+        margin-bottom: 4px;
+    }
+
+    .section-card .section-subtext {
+        margin-bottom: 18px;
+    }
+
+    .card-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+
+    .item-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .dashboard-item {
+        background: rgba(8, 18, 44, 0.74);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 18px;
+        padding: 16px;
+        transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .dashboard-item:hover {
+        transform: translateY(-2px);
+        border-color: rgba(34, 211, 238, 0.14);
+        box-shadow: 0 14px 26px rgba(0,0,0,0.18);
+    }
+
+    .dashboard-item.completed {
+        border-color: rgba(34, 197, 94, 0.18);
+        box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.05);
+    }
+
+    .dashboard-item-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 10px;
+    }
+
+    .dashboard-item-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    .dashboard-item-desc {
+        font-size: 13px;
+        color: var(--text-soft);
+        line-height: 1.55;
+        margin-top: 6px;
+    }
+
+    .dashboard-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .dashboard-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .task-form-panel {
+        background: rgba(8, 18, 44, 0.72);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 18px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .task-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .task-form-grid .full {
+        grid-column: 1 / -1;
+    }
+
+    .stats-vertical {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(8, 18, 44, 0.74);
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .stat-row-left strong {
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .stat-row-left span {
+        color: var(--text-soft);
+        font-size: 13px;
+    }
+
+    .stat-row-value {
+        font-size: 24px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .insight-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .insight-card {
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(8, 18, 44, 0.74);
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .insight-card h3 {
+        font-size: 15px;
+        margin-bottom: 6px;
+    }
+
+    .insight-card p {
+        font-size: 14px;
+        color: var(--text-soft);
+    }
+
+    .weekly-card canvas {
+        display: block;
+    }
+
+    .weekly-chart-wrap {
+        position: relative;
+        width: 100%;
+        height: 320px;
+        margin-top: 10px;
+    }
+
+    .empty-dashboard {
+        padding: 18px;
+        border-radius: 18px;
+        border: 1px dashed rgba(255,255,255,0.08);
+        background: rgba(8, 18, 44, 0.62);
+        color: var(--text-soft);
+    }
+
+    @media (max-width: 1200px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .hero-bottom {
+            grid-template-columns: 1fr;
+        }
+
+        .progress-ring-wrap {
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 820px) {
+        .progress-meta-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .task-form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .task-form-grid .full {
+            grid-column: auto;
+        }
+
+        .progress-ring {
+            --size: 180px;
+        }
+
+        .progress-ring-value {
+            font-size: 34px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-shell">
+    <div class="card hero-card">
+        <div class="hero-top">
+            <div class="hero-copy">
+                <h2>{{ today }} — Your command center</h2>
+                <p>
+                    A focused view of today’s habits, tasks, and progress. Keep the momentum going.
+                </p>
+            </div>
+
+            <div class="hero-metrics">
+                <div class="hero-pill">⚡ {{ completed_items_today|default:completed_habits_today|add:completed_tasks_today }}/{{ total_habits|add:total_tasks_today }} actions</div>
+                <div class="hero-pill">🔥 {{ longest_streak_habit.streak|default:0 }} day streak</div>
+                <div class="hero-pill">📈 {{ habits_completed_week|add:tasks_completed_week }} completions this week</div>
+            </div>
+        </div>
+
+        <div class="hero-bottom">
+            <div class="progress-panel">
+                <div class="progress-topline">
+                    <div>
+                        <strong>Today’s progress</strong>
+                        <div class="progress-sub">{{ feedback_message }}</div>
+                    </div>
+                    <span class="badge purple">{{ progress_percent }}% complete</span>
+                </div>
+
+                <div class="progress-shell-lg">
+                    <div class="progress-fill-lg"></div>
+                </div>
+
+                <div class="progress-meta-grid">
+                    <div class="mini-metric">
+                        <div class="mini-metric-value">{{ completed_habits_today }}/{{ total_habits }}</div>
+                        <div class="mini-metric-label">Today's habits</div>
+                    </div>
+                    <div class="mini-metric">
+                        <div class="mini-metric-value">{{ completed_tasks_today }}/{{ total_tasks_today }}</div>
+                        <div class="mini-metric-label">Today's tasks</div>
+                    </div>
+                    <div class="mini-metric">
+                        <div class="mini-metric-value">{{ habits_completed_week|add:tasks_completed_week }}</div>
+                        <div class="mini-metric-label">Weekly completions</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-ring-wrap">
+                <div class="progress-ring">
+                    <div class="progress-ring-inner">
+                        <div class="progress-ring-value">{{ progress_percent }}%</div>
+                        <div class="progress-ring-label">Done today</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="left-stack">
+            <div class="card section-card">
+                <div class="card-toolbar">
+                    <div>
+                        <h2>Today's Habits</h2>
+                        <p class="section-subtext">Only the habits scheduled for today.</p>
+                    </div>
+                    <a href="{% url 'habit_list' %}" class="link-btn">View all habits</a>
+                </div>
+
+                {% if habits %}
+                    <div class="item-grid">
+                        {% for habit in habits %}
+                            <div class="dashboard-item {% if habit.id in completed_habit_ids %}completed{% endif %}">
+                                <div class="dashboard-item-top">
+                                    <div>
+                                        <p class="dashboard-item-title">{{ habit.title }}</p>
+
+                                        <div class="dashboard-meta">
+                                            <span class="badge">🔁 {{ habit.frequency|title }}</span>
+
+                                            {% if habit.preferred_time %}
+                                                <span class="badge">🕒 {{ habit.preferred_time|time:"H:i" }}</span>
+                                            {% endif %}
+
+                                            <span class="badge purple">🔥 {{ habit.streak }} streak</span>
+                                        </div>
+
+                                        {% if habit.description %}
+                                            <div class="dashboard-item-desc">{{ habit.description }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    {% if habit.id in completed_habit_ids %}
+                                        <span class="badge success">Done</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="dashboard-actions">
+                                    {% if habit.id in completed_habit_ids %}
+                                        <span class="done">✅ Completed today</span>
+                                    {% else %}
+                                        <form method="post" action="{% url 'complete_habit' habit.id %}" class="inline-form">
+                                            {% csrf_token %}
+                                            <button type="submit">Mark done</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-dashboard">No habits scheduled for today.</div>
+                {% endif %}
+            </div>
+
+            <div class="card section-card">
+                <div class="card-toolbar">
+                    <div>
+                        <h2>Today's Tasks</h2>
+                        <p class="section-subtext">Quick add and manage what matters today.</p>
+                    </div>
+                    <a href="{% url 'task_list' %}" class="link-btn">Open task planner</a>
+                </div>
+
+                <div class="task-form-panel">
+                    <form method="post" action="{% url 'add_task' %}">
+                        {% csrf_token %}
+                        <div class="task-form-grid">
+                            <div class="full">
+                                <label for="{{ task_form.title.id_for_label }}">Task Title</label>
+                                {{ task_form.title }}
+                            </div>
+
+                            <div class="full">
+                                <label for="{{ task_form.description.id_for_label }}">Description</label>
+                                {{ task_form.description }}
+                            </div>
+
+                            <div>
+                                <label for="{{ task_form.task_date.id_for_label }}">Date</label>
+                                {{ task_form.task_date }}
+                            </div>
+
+                            <div>
+                                <label for="{{ task_form.category.id_for_label }}">Category</label>
+                                {{ task_form.category }}
+                            </div>
+
+                            <div>
+                                <label for="{{ task_form.start_time.id_for_label }}">Start Time</label>
+                                {{ task_form.start_time }}
+                            </div>
+
+                            <div>
+                                <label for="{{ task_form.end_time.id_for_label }}">End Time</label>
+                                {{ task_form.end_time }}
+                            </div>
+
+                            <div class="full">
+                                <label for="{{ task_form.reward.id_for_label }}">Reward</label>
+                                {{ task_form.reward }}
+                            </div>
+
+                            <div class="full">
+                                <button type="submit">Add Task</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                {% if tasks_today %}
+                    <div class="item-grid">
+                        {% for task in tasks_today %}
+                            <div class="dashboard-item task {{ task.category }} {% if task.completed %}completed{% endif %}">
+                                <div class="dashboard-item-top">
+                                    <div>
+                                        <p class="dashboard-item-title">{{ task.title }}</p>
+
+                                        <div class="dashboard-meta">
+                                            <span class="task-category {{ task.category }}">
+                                                {% if task.category == 'study' %}📚 Study{% endif %}
+                                                {% if task.category == 'personal' %}🧍 Personal{% endif %}
+                                                {% if task.category == 'health' %}🧘 Health{% endif %}
+                                                {% if task.category == 'university' %}🎓 University{% endif %}
+                                                {% if task.category == 'business' %}💼 Business{% endif %}
+                                                {% if task.category == 'sports' %}⚽ Sports{% endif %}
+                                                {% if task.category == 'entertainment' %}🎮 Entertainment{% endif %}
+                                                {% if task.category == 'other' %}🗂 Other{% endif %}
+                                            </span>
+                                            {% if task.start_time %}
+                                                <span class="badge">🕒 {{ task.start_time|time:"H:i" }}</span>
+                                            {% endif %}
+                                            {% if task.end_time %}
+                                                <span class="badge">→ {{ task.end_time|time:"H:i" }}</span>
+                                            {% endif %}
+                                            {% if task.reward %}
+                                                <span class="badge warning">🎁 {{ task.reward }}</span>
+                                            {% endif %}
+                                        </div>
+
+                                        {% if task.description %}
+                                            <div class="dashboard-item-desc">{{ task.description }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    {% if task.completed %}
+                                        <span class="badge success">Done</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="dashboard-actions">
+                                    {% if task.completed %}
+                                        <span class="done">✅ Completed</span>
+                                    {% else %}
+                                        <form method="post" action="{% url 'complete_task' task.id %}" class="inline-form">
+                                            {% csrf_token %}
+                                            <button type="submit">Mark complete</button>
+                                        </form>
+                                    {% endif %}
+
+                                    <form method="post" action="{% url 'delete_task' task.id %}" class="inline-form">
+                                        {% csrf_token %}
+                                        <button type="submit" class="ghost-btn">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-dashboard">No tasks for today yet. Add one above.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="right-stack">
+            <div class="card section-card">
+                <h2>Quick Stats</h2>
+                <p class="section-subtext">A compact performance summary.</p>
+
+                <div class="stats-vertical">
+                    <div class="stat-row">
+                        <div class="stat-row-left">
+                            <strong>Today's habits</strong>
+                            <span>Scheduled habits completed today</span>
+                        </div>
+                        <div class="stat-row-value">{{ completed_habits_today }}/{{ total_habits }}</div>
+                    </div>
+
+                    <div class="stat-row">
+                        <div class="stat-row-left">
+                            <strong>Today's tasks</strong>
+                            <span>Tasks completed for the current date</span>
+                        </div>
+                        <div class="stat-row-value">{{ completed_tasks_today }}/{{ total_tasks_today }}</div>
+                    </div>
+
+                    <div class="stat-row">
+                        <div class="stat-row-left">
+                            <strong>This week</strong>
+                            <span>Total habit completions</span>
+                        </div>
+                        <div class="stat-row-value">{{ habits_completed_week }}</div>
+                    </div>
+
+                    <div class="stat-row">
+                        <div class="stat-row-left">
+                            <strong>This week</strong>
+                            <span>Total task completions</span>
+                        </div>
+                        <div class="stat-row-value">{{ tasks_completed_week }}</div>
+                    </div>
+
+                    <div class="stat-row">
+                        <div class="stat-row-left">
+                            <strong>This month</strong>
+                            <span>Habit completions</span>
+                        </div>
+                        <div class="stat-row-value">{{ habits_completed_month }}</div>
+                    </div>
+
+                    <div class="stat-row">
+                        <div class="stat-row-left">
+                            <strong>This month</strong>
+                            <span>Task completions</span>
+                        </div>
+                        <div class="stat-row-value">{{ tasks_completed_month }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card section-card">
+                <h2>Insights</h2>
+                <p class="section-subtext">What your data is saying right now.</p>
+
+                <div class="insight-list">
+                    {% if most_consistent_habit %}
+                        <div class="insight-card">
+                            <h3>Most consistent habit</h3>
+                            <p>{{ most_consistent_habit.habit.title }} — {{ most_consistent_habit.completed_count }} completions this week.</p>
+                        </div>
+                    {% endif %}
+
+                    {% if longest_streak_habit %}
+                        <div class="insight-card">
+                            <h3>Longest current streak</h3>
+                            <p>{{ longest_streak_habit.habit.title }} — {{ longest_streak_habit.streak }} days.</p>
+                        </div>
+                    {% endif %}
+
+                    {% if best_streak_habit %}
+                        <div class="insight-card">
+                            <h3>Best streak ever</h3>
+                            <p>{{ best_streak_habit.habit.title }} — {{ best_streak_habit.best_streak }} days.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card section-card weekly-card">
+        <div class="card-toolbar">
+            <div>
+                <h2>Weekly Activity</h2>
+                <p class="section-subtext">Completed habits and tasks over the last 7 days.</p>
+            </div>
+            <a href="{% url 'analysis' %}" class="link-btn">Open full analysis</a>
+        </div>
+
+        <div class="weekly-chart-wrap">
+            <canvas id="weeklyActivityChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const weeklyCtx = document.getElementById('weeklyActivityChart');
+
+    if (weeklyCtx) {
+        new Chart(weeklyCtx, {
+            type: 'line',
+            data: {
+                labels: {{ chart_labels|safe }},
+                datasets: [
+                    {
+                        label: 'Habits Completed',
+                        data: {{ chart_habits_data|safe }},
+                        borderColor: '#22d3ee',
+                        backgroundColor: 'rgba(34, 211, 238, 0.14)',
+                        fill: true,
+                        tension: 0.36,
+                        pointRadius: 4,
+                        pointHoverRadius: 5
+                    },
+                    {
+                        label: 'Tasks Completed',
+                        data: {{ chart_tasks_data|safe }},
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.12)',
+                        fill: true,
+                        tension: 0.36,
+                        pointRadius: 4,
+                        pointHoverRadius: 5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#e2e8f0',
+                            padding: 18
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#cbd5e1'
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.08)'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#cbd5e1',
+                            stepSize: 1
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.08)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

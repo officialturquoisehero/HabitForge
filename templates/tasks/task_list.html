@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Tasks | Uni Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+    .task-page-grid {
+        display: grid;
+        grid-template-columns: 1.05fr 1.45fr;
+        gap: 22px;
+    }
+
+    .task-form-card,
+    .task-list-card {
+        min-height: 100%;
+    }
+
+    @media (max-width: 1000px) {
+        .task-page-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="task-page-grid">
+    <div class="card task-form-card">
+        <h2>Task Planner</h2>
+        <p class="section-subtext">Add tasks, assign dates and times, and attach a reward.</p>
+
+        <form method="get" style="margin-bottom: 18px;">
+            <label for="date-filter">View tasks for date</label>
+            <input id="date-filter" type="date" name="date" value="{{ today|date:'Y-m-d' }}">
+            <button type="submit">View Date</button>
+        </form>
+
+        <form method="post" action="{% url 'add_task' %}">
+            {% csrf_token %}
+
+            <label for="{{ form.title.id_for_label }}">Task Title</label>
+            {{ form.title }}
+
+            <label for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description }}
+
+            <label for="{{ form.task_date.id_for_label }}">Date</label>
+            {{ form.task_date }}
+
+            <label for="{{ form.category.id_for_label }}">Category</label>
+            {{ form.category }}
+
+            <label for="{{ form.start_time.id_for_label }}">Start Time</label>
+            {{ form.start_time }}
+
+            <label for="{{ form.end_time.id_for_label }}">End Time</label>
+            {{ form.end_time }}
+
+            <label for="{{ form.reward.id_for_label }}">Reward</label>
+            {{ form.reward }}
+
+            <button type="submit">Add Task</button>
+        </form>
+    </div>
+
+    <div class="card task-list-card">
+        <h2>Tasks for {{ today }}</h2>
+        <p class="section-subtext">Everything scheduled for the selected date.</p>
+
+        {% if tasks %}
+            <ul class="clean-list">
+                {% for task in tasks %}
+                    <li class="item-card task {{ task.category }}">
+                        <div class="item-top">
+                            <div>
+                                <p class="item-title">{{ task.title }}</p>
+
+                                <div class="item-meta">
+                                    <span class="task-category {{ task.category }}">
+                                        {% if task.category == 'study' %}📚 Study{% endif %}
+                                        {% if task.category == 'personal' %}🧍 Personal{% endif %}
+                                        {% if task.category == 'health' %}🧘 Health{% endif %}
+                                        {% if task.category == 'university' %}🎓 University{% endif %}
+                                        {% if task.category == 'business' %}💼 Business{% endif %}
+                                        {% if task.category == 'sports' %}⚽ Sports{% endif %}
+                                        {% if task.category == 'entertainment' %}🎮 Entertainment{% endif %}
+                                        {% if task.category == 'other' %}🗂 Other{% endif %}
+                                    </span>
+
+                                    <span class="badge">📅 {{ task.task_date }}</span>
+
+                                    {% if task.start_time %}
+                                        <span class="badge">🕒 {{ task.start_time|time:"H:i" }}</span>
+                                    {% endif %}
+
+                                    {% if task.end_time %}
+                                        <span class="badge">→ {{ task.end_time|time:"H:i" }}</span>
+                                    {% endif %}
+
+                                    {% if task.reward %}
+                                        <span class="badge warning">🎁 {{ task.reward }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {% if task.completed %}
+                                <span class="badge success">Done</span>
+                            {% endif %}
+                        </div>
+
+                        {% if task.description %}
+                            <p class="small">{{ task.description }}</p>
+                        {% endif %}
+
+                        <div class="item-actions">
+                            {% if task.completed %}
+                                <span class="done">✅ Completed</span>
+                            {% else %}
+                                <form method="post" action="{% url 'complete_task' task.id %}" class="inline-form">
+                                    {% csrf_token %}
+                                    <button type="submit">Mark Complete</button>
+                                </form>
+                            {% endif %}
+
+                            <form method="post" action="{% url 'delete_task' task.id %}" class="inline-form">
+                                {% csrf_token %}
+                                <button type="submit" class="ghost-btn">Delete</button>
+                            </form>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="empty-box">No tasks for this date yet.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

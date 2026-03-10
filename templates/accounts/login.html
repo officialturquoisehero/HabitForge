@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Login | Uni Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-wrap {
+        min-height: calc(100vh - 180px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 520px;
+        padding: 28px;
+    }
+
+    .auth-title {
+        font-size: 28px;
+        margin-bottom: 8px;
+    }
+
+    .auth-subtitle {
+        color: var(--text-soft);
+        margin-bottom: 22px;
+    }
+
+    .auth-footer {
+        margin-top: 14px;
+        color: var(--text-soft);
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+    <div class="page-card auth-card">
+        <h2 class="auth-title">Welcome back</h2>
+        <p class="auth-subtitle">Log in to continue tracking your habits, schedule, and progress.</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.username.label_tag }}
+            {{ form.username }}
+            {% if form.username.errors %}
+                <div class="field-errors">{{ form.username.errors }}</div>
+            {% endif %}
+
+            {{ form.password.label_tag }}
+            {{ form.password }}
+            {% if form.password.errors %}
+                <div class="field-errors">{{ form.password.errors }}</div>
+            {% endif %}
+
+            {% if form.non_field_errors %}
+                <div class="field-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <button type="submit">Log In</button>
+        </form>
+
+        <p class="auth-footer">
+            Don’t have an account?
+            <a href="{% url 'signup' %}" class="link-btn">Create one</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
